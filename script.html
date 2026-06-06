@@ -1,90 +1,94 @@
 const entriesUrl =
-'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-puGub3XVLOFAFKfWrtiidWGdv00tQVKQS0D87xVpUq_P2COwgvflcD937-UVHUgeJ1-BnY2jCdny/pub?gid=0&single=true&output=csv';
+'https://docs.google.com/spreadsheets/d/1XtiI0grU2Ebpz3PMOe1iFpVFu9Oh-w3S_yMcQoR6DXw/gviz/tq?tqx=out:csv&sheet=Entries';
 
 const scoresUrl =
-'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-puGub3XVLOFAFKfWrtiidWGdv00tQVKQS0D87xVpUq_P2COwgvflcD937-UVHUgeJ1-BnY2jCdny/pub?gid=826655305&single=true&output=csv';
+'https://docs.google.com/spreadsheets/d/1XtiI0grU2Ebpz3PMOe1iFpVFu9Oh-w3S_yMcQoR6DXw/gviz/tq?tqx=out:csv&sheet=TeamScores';
 
-function csvToArray(text) {
-  return text.trim().split('\n').map(row => row.split(','));
+function parseCSV(text) {
+  return text.trim().split('\n').map(r => r.split(','));
 }
 
 async function loadData() {
+  try {
+    const [entriesText, scoresText] = await Promise.all([
+      fetch(entriesUrl).then(r => r.text()),
+      fetch(scoresUrl).then(r => r.text())
+    ]);
 
-  const entriesCsv = await fetch(entriesUrl).then(r => r.text());
-  const scoresCsv = await fetch(scoresUrl).then(r => r.text());
+    const entries = parseCSV(entriesText);
+    const scores = parseCSV(scoresText);
 
-  const entries = csvToArray(entriesCsv);
-  const scores = csvToArray(scoresCsv);
-
-  const scoreMap = {};
-
-  scores.slice(1).forEach(row => {
-    scoreMap[row[0]] = Number(row[1]) || 0;
-  });
-
-  const multipliers = [6,5,4,3,2,1];
-
-  const leaderboard = [];
-
-  entries.slice(1).forEach(row => {
-
-    const player = row[0];
-
-    let total = 0;
-
-    for(let i=0;i<6;i++){
-      const team = row[i+1];
-      total += (scoreMap[team] || 0) * multipliers[i];
-    }
-
-    leaderboard.push({
-      player,
-      total
+    // Build score map
+    const scoreMap = {};
+    scores.slice(1).forEach(row => {
+      scoreMap[row[0]] = Number(row[1]) || 0;
     });
 
-  });
+    const multipliers = [6, 5, 4, 3, 2, 1];
 
-  leaderboard.sort((a,b)=>b.total-a.total);
+    const leaderboard = [];
 
-  let html =
-  '<table><tr><th>Rank</th><th>Player</th><th>Score</th></tr>';
+    entries.slice(1).forEach(row => {
+      const player = row[0];
+      let total = 0;
 
-  leaderboard.forEach((p,index)=>{
+      for (let i = 0; i < 6; i++) {
+        const team = row[i + 1];
+        total += (scoreMap[team] || 0) * multipliers[i];
+      }
 
-    let cls='';
+      leaderboard.push({ player, total });
+    });
 
-    if(index===0) cls='rank1';
-    if(index===1) cls='rank2';
-    if(index===2) cls='rank3';
+    leaderboard.sort((a, b) => b.total - a.total);
 
-    html += `
-      <tr class="${cls}">
-        <td>${index+1}</td>
-        <td>${p.player}</td>
-        <td>${p.total}</td>
-      </tr>
+    // Render leaderboard
+    let html = `
+      <table>
+        <tr><th>Rank</th><th>Player</th><th>Score</th></tr>
     `;
-  });
 
-  html += '</table>';
+    leaderboard.forEach((p, i) => {
+      let cls = '';
+      if (i === 0) cls = 'rank1';
+      if (i === 1) cls = 'rank2';
+      if (i === 2) cls = 'rank3';
 
-  document.getElementById('leaderboard').innerHTML = html;
+      html += `
+        <tr class="${cls}">
+          <td>${i + 1}</td>
+          <td>${p.player}</td>
+          <td>${p.total}</td>
+        </tr>
+      `;
+    });
 
-  let teamHtml =
-  '<table><tr><th>Team</th><th>Raw Points</th></tr>';
+    html += '</table>';
+    document.getElementById('leaderboard').innerHTML = html;
 
-  scores.slice(1).forEach(row=>{
-    teamHtml += `
-      <tr>
-        <td>${row[0]}</td>
-        <td>${row[1]}</td>
-      </tr>
+    // Render team scores
+    let teamHtml = `
+      <table>
+        <tr><th>Team</th><th>Points</th></tr>
     `;
-  });
 
-  teamHtml += '</table>';
+    scores.slice(1).forEach(row => {
+      teamHtml += `
+        <tr>
+          <td>${row[0]}</td>
+          <td>${row[1]}</td>
+        </tr>
+      `;
+    });
 
-  document.getElementById('teams').innerHTML = teamHtml;
+    teamHtml += '</table>';
+    document.getElementById('teams').innerHTML = teamHtml;
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('leaderboard').innerHTML = "Error loading data";
+    document.getElementById('teams').innerHTML = "Error loading data";
+  }
 }
 
 loadData();
