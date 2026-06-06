@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b1020;
+  color: white;
+}
+
+header {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+.card {
+  background: #151c34;
+  margin: 20px auto;
+  width: min(1100px, 90%);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #2d3758;
+}
+
+th {
+  text-align: left;
+}
+
+.rank1 {
+  color: gold;
+  font-weight: bold;
+}
+
+.rank2 {
+  color: silver;
+}
+
+.rank3 {
+  color: #cd7f32;
+}
+
+summary {
+  cursor: pointer;
+  font-size: 1.1rem;
+}
