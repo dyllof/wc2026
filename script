@@ -1,0 +1,90 @@
+const entriesUrl =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-puGub3XVLOFAFKfWrtiidWGdv00tQVKQS0D87xVpUq_P2COwgvflcD937-UVHUgeJ1-BnY2jCdny/pub?gid=0&single=true&output=csv';
+
+const scoresUrl =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-puGub3XVLOFAFKfWrtiidWGdv00tQVKQS0D87xVpUq_P2COwgvflcD937-UVHUgeJ1-BnY2jCdny/pub?gid=826655305&single=true&output=csv';
+
+function csvToArray(text) {
+  return text.trim().split('\n').map(row => row.split(','));
+}
+
+async function loadData() {
+
+  const entriesCsv = await fetch(entriesUrl).then(r => r.text());
+  const scoresCsv = await fetch(scoresUrl).then(r => r.text());
+
+  const entries = csvToArray(entriesCsv);
+  const scores = csvToArray(scoresCsv);
+
+  const scoreMap = {};
+
+  scores.slice(1).forEach(row => {
+    scoreMap[row[0]] = Number(row[1]) || 0;
+  });
+
+  const multipliers = [6,5,4,3,2,1];
+
+  const leaderboard = [];
+
+  entries.slice(1).forEach(row => {
+
+    const player = row[0];
+
+    let total = 0;
+
+    for(let i=0;i<6;i++){
+      const team = row[i+1];
+      total += (scoreMap[team] || 0) * multipliers[i];
+    }
+
+    leaderboard.push({
+      player,
+      total
+    });
+
+  });
+
+  leaderboard.sort((a,b)=>b.total-a.total);
+
+  let html =
+  '<table><tr><th>Rank</th><th>Player</th><th>Score</th></tr>';
+
+  leaderboard.forEach((p,index)=>{
+
+    let cls='';
+
+    if(index===0) cls='rank1';
+    if(index===1) cls='rank2';
+    if(index===2) cls='rank3';
+
+    html += `
+      <tr class="${cls}">
+        <td>${index+1}</td>
+        <td>${p.player}</td>
+        <td>${p.total}</td>
+      </tr>
+    `;
+  });
+
+  html += '</table>';
+
+  document.getElementById('leaderboard').innerHTML = html;
+
+  let teamHtml =
+  '<table><tr><th>Team</th><th>Raw Points</th></tr>';
+
+  scores.slice(1).forEach(row=>{
+    teamHtml += `
+      <tr>
+        <td>${row[0]}</td>
+        <td>${row[1]}</td>
+      </tr>
+    `;
+  });
+
+  teamHtml += '</table>';
+
+  document.getElementById('teams').innerHTML = teamHtml;
+}
+
+loadData();
